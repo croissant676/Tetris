@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Retro tetris</title>
+    <!--    use https://thenounproject.com/api/private/icons/28580/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0&token=gAAAAABj0-cWmVacybQbgsz66NsBmIgff-XVQYsbygA9Mo-0xmiuvlwQD07PVT4FROFPApg7KFnwYCaemm8gAQoLvVii0oVi7w%3D%3D as favicon-->
+    <link rel="icon"
+          href="https://thenounproject.com/api/private/icons/28580/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0&token=gAAAAABj0-cWmVacybQbgsz66NsBmIgff-XVQYsbygA9Mo-0xmiuvlwQD07PVT4FROFPApg7KFnwYCaemm8gAQoLvVii0oVi7w%3D%3D">
+    <script src="tetris.js" async></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background: black;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+        }
+
+        .mino {
+            width: 20px;
+            height: 20px;
+            background: #313131;
+            border: 1px solid black;
+        }
+
+        .black-mino {
+            background: black;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: row;
+        }
+
+
+        button {
+            background: black;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            padding: 10px;
+            margin: 10px;
+            border: 4px solid dodgerblue;
+        }
+
+        button:hover {
+            border: 4px solid #83c1ff;
+        }
+
+        #starting-page {
+            /*    center */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            /*    items inside should be in the middle*/
+            text-align: center;
+        }
+
+
+        #hold {
+            left: 0;
+            position: relative;
+        }
+
+        #queue {
+            right: 0;
+            position: relative;
+        }
+
+        #top-label {
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="starting-page">
+    <h1>Tetris</h1>
+
+    This game is a recreation of the popular retro game Tetris.<br> The goal of the game is to score as many points as
+    possible<br> by
+    clearing lines.<br> The game ends when the blocks reach the top of the screen.
+
+    <br><br>
+    You can change your controls by clicking the buttons below.<br>
+
+    <br> To pause the game, press the ESC key.<br>
+    <br> To restart the game, press the F4 key.<br>
+
+    Try to beat 20000 lines.<br>
+
+    <button id="control-button">Controls</button>
+    <button id="start-button">Start</button>
+</div>
+<div id="game">
+    <div class="container">
+        <p id="top-label">
+        <div id="tetris"></div>
+        <p id="label">
+    </div>
+</div>
+</body>
+</html>
