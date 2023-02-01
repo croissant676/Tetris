@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 var genericSrsCheck = {
     spawnRight: [
         { x: 0, y: 0 },
@@ -169,18 +167,25 @@ var O = new PieceType("O-piece (yellow)", "#ffe964", 3);
 var S = new PieceType("S-piece (green)", "#72ff59", 4);
 var T = new PieceType("T-piece (purple)", "#d15eff", 5);
 var Z = new PieceType("Z-piece (red)", "#ff4c29", 6);
-var EMPTY_PIECE_COLOR = "#363636";
 var PIECE_TYPES = [I, J, L, O, S, T, Z];
 function stringToPieceType(name) {
     switch (name) {
-        case "I": return I;
-        case "J": return J;
-        case "L": return L;
-        case "O": return O;
-        case "Z": return Z;
-        case "S": return S;
-        case "T": return T;
-        default: return undefined;
+        case "I":
+            return I;
+        case "J":
+            return J;
+        case "L":
+            return L;
+        case "O":
+            return O;
+        case "Z":
+            return Z;
+        case "S":
+            return S;
+        case "T":
+            return T;
+        default:
+            return undefined;
     }
 }
 I.srsShapes = {
@@ -250,6 +255,7 @@ PIECE_TYPES.slice(1).forEach(function (pieceType) {
     pieceType.srsChecks = genericSrsCheck;
 });
 I.srsChecks = iChecks;
+// noinspection JSUnusedGlobalSymbols
 var Mino;
 (function (Mino) {
     Mino[Mino["I"] = 0] = "I";
@@ -280,6 +286,7 @@ var RotationDirection;
 var Piece = /** @class */ (function () {
     function Piece(type) {
         this.previousMinos = [];
+        this.lastIsSpin = false;
         this.type = type;
         this.rotation = 0;
         this.x = 3;
@@ -289,7 +296,6 @@ var Piece = /** @class */ (function () {
         this.y = 0;
     }
     Piece.prototype.rotate = function (rotationDirection) {
-        var _this = this;
         var newRotation = this.rotation;
         if (rotationDirection === RotationDirection.Clockwise) {
             newRotation--;
@@ -309,27 +315,36 @@ var Piece = /** @class */ (function () {
             console.log(fixForSrs(this.rotation), fixForSrs(newRotation));
             var srsChecks = this.type.getRotationFor(fixForSrs(this.rotation), fixForSrs(newRotation));
             console.log(this.x, this.y, this.rotation, newRotation, srsChecks);
-            var _loop_1 = function (i) {
+            for (var i = 0; i < srsChecks.length; i++) {
                 var srsCheck = srsChecks[i];
                 if (currentGame.canShiftPiece(srsCheck.x, -srsCheck.y, shape)) {
-                    this_1.x += srsCheck.x;
-                    this_1.y -= srsCheck.y;
-                    this_1.rotation = newRotation;
-                    return { value: void 0 };
+                    this.x += srsCheck.x;
+                    this.y -= srsCheck.y;
+                    this.rotation = newRotation;
+                    console.log("success ".concat(i));
+                    this.lastIsSpin = (i !== 0);
+                    if (!this.lastIsSpin && this.type == T) {
+                        if (newRotation != 0)
+                            return;
+                        if ((currentGame.board[this.y][this.x] != Mino.None ||
+                            currentGame.board[this.y][this.x + 2] != Mino.None) &&
+                            currentGame.board[this.y + 2][this.x] != Mino.None &&
+                            currentGame.board[this.y + 2][this.x + 2] != Mino.None) {
+                            this.lastIsSpin = true;
+                        }
+                        else {
+                            console.log(currentGame.board[this.y][this.x], currentGame.board[this.y][this.x + 2], currentGame.board[this.y + 2][this.x], currentGame.board[this.y + 2][this.x + 2]);
+                        }
+                    }
+                    return;
                 }
                 else {
-                    var list_1 = [];
-                    shape.forEach(function (mino) {
-                        list_1.push("{x: ".concat(_this.x + mino.x + srsCheck.x, ", y: ").concat(_this.y + mino.y + srsCheck.y, "}"));
-                    });
-                    console.log("{".concat(fixForSrs(this_1.rotation), " >> ").concat(fixForSrs(newRotation), "}[").concat(srsCheck.x, ", ").concat(srsCheck.y, "][").concat(list_1.join(", "), "],"));
+                    // const list = [];
+                    // shape.forEach(mino => {
+                    //     list.push(`{x: ${this.x + mino.x + srsCheck.x}, y: ${this.y + mino.y + srsCheck.y}}`);
+                    // });
+                    // console.log(`{${fixForSrs(this.rotation)} >> ${fixForSrs(newRotation)}}[${srsCheck.x}, ${srsCheck.y}][${list.join(", ")}],`);
                 }
-            };
-            var this_1 = this;
-            for (var i = 0; i < srsChecks.length; i++) {
-                var state_1 = _loop_1(i);
-                if (typeof state_1 === "object")
-                    return state_1.value;
             }
             currentGame.displayBoard();
         }
@@ -373,9 +388,9 @@ var Piece = /** @class */ (function () {
         });
         this.previousMinos = [];
         var shadowY = this.y;
-        var _loop_2 = function () {
+        var _loop_1 = function () {
             var collides = false;
-            this_2.type.srsShapes.shape[this_2.rotation].forEach(function (mino) {
+            this_1.type.srsShapes.shape[this_1.rotation].forEach(function (mino) {
                 var row = board[shadowY + mino.y];
                 if (row === undefined) {
                     collides = true;
@@ -390,10 +405,10 @@ var Piece = /** @class */ (function () {
                 return "break";
             }
         };
-        var this_2 = this;
+        var this_1 = this;
         while (shadowY++ < 22) {
-            var state_2 = _loop_2();
-            if (state_2 === "break")
+            var state_1 = _loop_1();
+            if (state_1 === "break")
                 break;
         }
         shadowY--;
@@ -487,7 +502,7 @@ var Bag = /** @class */ (function () {
         this.bagChecks = bagChecks;
     }
     Bag.prototype.allowsPiece = function (piece) {
-        return this.allowedPieces.includes(piece);
+        return this.allowedPieces.indexOf(piece) !== -1;
     };
     Bag.prototype.checkPieces = function (bag) {
         return !this.bagChecks || this.bagChecks.every(function (check) { return check(bag); });
@@ -496,7 +511,7 @@ var Bag = /** @class */ (function () {
 }());
 var GenericBag = new Bag("generic", PIECE_TYPES.slice());
 function checkStringToFunction(data) {
-    if (data.includes("after")) {
+    if (data.indexOf("after") !== -1) {
         var pieces = data.split(" after ");
         if (pieces.length != 2)
             return undefined;
@@ -508,7 +523,7 @@ function checkStringToFunction(data) {
         var endPieces_1 = allEndPieces.map(function (p) { return p[1]; }).filter(function (p) { return p; });
         return (function (bag) { return frontPieces_1.sort(function (p) { return bag.indexOf(p); }).map(function (p) { return bag.indexOf(p); }).slice(-1)[0] > endPieces_1.sort(function (p) { return bag.indexOf(p); }).map(function (p) { return bag.indexOf(p); }).slice(-1)[0]; });
     }
-    else if (data.includes("away from")) {
+    else if (data.indexOf("away from") !== -1) {
         /*
         let pieces = data.split(" away from ")
         if (pieces.length != 2) return undefined
@@ -520,12 +535,11 @@ function checkStringToFunction(data) {
         return undefined;
     }
 }
-function individualCheck(data) {
-}
+// noinspection JSUnusedGlobalSymbols
 function readBagFile(data) {
     var parsedData = JSON.parse(data);
-    var bags = new Map();
-    bags.set("generic", GenericBag);
+    var bags = {};
+    bags["generic"] = GenericBag;
     for (var key in parsedData) {
         if (key === "generic") {
             continue;
@@ -544,26 +558,26 @@ function readBagFile(data) {
             checks = checkData.map(function (c) { return checkStringToFunction(c); });
         }
         console.log(checks);
-        bags.set(key, new Bag(key, pieces, pieces.length, checks));
+        bags[key] = new Bag(key, pieces, pieces.length, checks);
     }
     var startingBagsData = parsedData.start.split(", ");
     var cyclingBagsData = parsedData.cycle.split(", ");
     var startingBags = startingBagsData.filter(function (b) {
-        if (bags.has(b)) {
+        if (bags[b]) {
             return true;
         }
         else {
             return console.log("No bag found for " + b + " in starting bags");
         }
-    }).map(function (b) { return bags.get(b); });
+    }).map(function (b) { return bags[b]; });
     var cyclingBags = cyclingBagsData.filter(function (b) {
-        if (bags.has(b)) {
+        if (bags[b]) {
             return true;
         }
         else {
             return console.log("No bag found for " + b + " in cycling bags");
         }
-    }).map(function (b) { return bags.get(b); });
+    }).map(function (b) { return bags[b]; });
     currentGame.queue.setStartingBags(startingBags);
     currentGame.queue.setCyclingBags(cyclingBags);
 }
@@ -578,6 +592,9 @@ var Controls = /** @class */ (function () {
         this.hold = hold;
         this.hardDrop = hardDrop;
     }
+    Controls.prototype.copy = function () {
+        return new Controls(this.left, this.right, this.down, this.rotateClockwise, this.rotateCounterClockwise, this.rotate180, this.hold, this.hardDrop);
+    };
     return Controls;
 }());
 var defaultControls = new Controls("ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", "z", "x", "c", " ");
@@ -593,7 +610,7 @@ var Game = /** @class */ (function () {
         this.display = [];
         this.gravity = 10;
         this.gravityCounter = 0;
-        this.marginTime = 2000;
+        this.marginTime = 25;
         this.marginCounter = 0;
         this.heldCurrentPieceAlready = true;
         this.controls = currentControls;
@@ -654,7 +671,7 @@ var Game = /** @class */ (function () {
         this.displayLabel();
     };
     Game.prototype.displayLabel = function () {
-        this.labelElement.innerText = "Lines: ".concat(this.linesCleared, " Pieces: ").concat(this.pieceCount, " \n        Score: ").concat(this.score, " Time: ").concat(this.secondsPlaying.toFixed(2), "\n        \n        Current piece rotation: ").concat(this.currentPiece.rotation, "\n        ");
+        this.labelElement.innerText = "Lines: ".concat(this.linesCleared, " Pieces: ").concat(this.pieceCount, " \n        Score: ").concat(this.score, " Time: ").concat(this.secondsPlaying.toFixed(2), "\n        \n        LSS: ").concat(this.currentPiece.lastIsSpin, "\n        ");
     };
     Game.prototype.displayTopLabel = function (text) {
         var _this = this;
@@ -697,23 +714,41 @@ var Game = /** @class */ (function () {
         if (count > 0) {
             var scoreIncrease = void 0;
             var type = void 0;
-            switch (count) {
-                case 1:
-                    scoreIncrease = 40;
-                    type = "Single";
-                    break;
-                case 2:
-                    scoreIncrease = 100;
-                    type = "Double";
-                    break;
-                case 3:
-                    scoreIncrease = 300;
-                    type = "Triple";
-                    break;
-                case 4:
-                    scoreIncrease = 1200;
-                    type = "Tetris";
-                    break;
+            if (this.currentPiece.type === T && this.currentPiece.lastIsSpin) {
+                switch (count) {
+                    case 1:
+                        scoreIncrease = 400;
+                        type = "T-Spin Single";
+                        break;
+                    case 2:
+                        scoreIncrease = 1200;
+                        type = "T-Spin Double";
+                        break;
+                    case 3:
+                        scoreIncrease = 1600;
+                        type = "T-Spin Triple";
+                        break;
+                }
+            }
+            else {
+                switch (count) {
+                    case 1:
+                        scoreIncrease = 40;
+                        type = "Single";
+                        break;
+                    case 2:
+                        scoreIncrease = 100;
+                        type = "Double";
+                        break;
+                    case 3:
+                        scoreIncrease = 300;
+                        type = "Triple";
+                        break;
+                    case 4:
+                        scoreIncrease = 1200;
+                        type = "Tetris";
+                        break;
+                }
             }
             // check for all clear
             if (this.board[21].every(function (mino) { return mino === Mino.None; })) {
@@ -1133,7 +1168,6 @@ function debugPieceTypes() {
         });
     });
 }
-var currentGame = new Game(document.getElementById("tetris"));
 var gameDiv = document.getElementById("tetris");
 gameDiv.style.display = "none";
 var startButton = document.getElementById("start-button");
@@ -1141,6 +1175,7 @@ startButton.addEventListener("click", function () {
     startGame();
 });
 var currentControls = defaultControls.copy();
+var currentGame;
 var controlButtons = document.getElementById("control-button");
 var _controlDiv;
 controlButtons.addEventListener("click", function (event) {
