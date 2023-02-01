@@ -1,3 +1,5 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var genericSrsCheck = {
     spawnRight: [
         { x: 0, y: 0 },
@@ -160,15 +162,27 @@ var PieceType = /** @class */ (function () {
     };
     return PieceType;
 }());
-var I = new PieceType("I-piece (cyan)", "#00b6ff", 0);
-var J = new PieceType("J-piece (blue)", "#0030ff", 1);
-var L = new PieceType("L-piece (orange)", "#ffa600", 2);
-var O = new PieceType("O-piece (yellow)", "#ffda00", 3);
-var S = new PieceType("S-piece (green)", "#27ff00", 4);
-var T = new PieceType("T-piece (purple)", "#b200ff", 5);
-var Z = new PieceType("Z-piece (red)", "#ff2900", 6);
+var I = new PieceType("I-piece (cyan)", "#21bfff", 0);
+var J = new PieceType("J-piece (blue)", "#2e48b7", 1);
+var L = new PieceType("L-piece (orange)", "#ffb733", 2);
+var O = new PieceType("O-piece (yellow)", "#ffe964", 3);
+var S = new PieceType("S-piece (green)", "#72ff59", 4);
+var T = new PieceType("T-piece (purple)", "#d15eff", 5);
+var Z = new PieceType("Z-piece (red)", "#ff4c29", 6);
 var EMPTY_PIECE_COLOR = "#363636";
 var PIECE_TYPES = [I, J, L, O, S, T, Z];
+function stringToPieceType(name) {
+    switch (name) {
+        case "I": return I;
+        case "J": return J;
+        case "L": return L;
+        case "O": return O;
+        case "Z": return Z;
+        case "S": return S;
+        case "T": return T;
+        default: return undefined;
+    }
+}
 I.srsShapes = {
     dimensions: { width: 4, height: 4 },
     shape: [
@@ -248,6 +262,15 @@ var Mino;
     Mino[Mino["None"] = 7] = "None";
     Mino[Mino["Shadow"] = 8] = "Shadow";
 })(Mino || (Mino = {}));
+function fixForSrs(rot) {
+    if (rot == 1) {
+        return 3;
+    }
+    else if (rot == 3) {
+        return 1;
+    }
+    return rot;
+}
 var RotationDirection;
 (function (RotationDirection) {
     RotationDirection["Clockwise"] = "clockwise";
@@ -266,6 +289,7 @@ var Piece = /** @class */ (function () {
         this.y = 0;
     }
     Piece.prototype.rotate = function (rotationDirection) {
+        var _this = this;
         var newRotation = this.rotation;
         if (rotationDirection === RotationDirection.Clockwise) {
             newRotation--;
@@ -282,16 +306,32 @@ var Piece = /** @class */ (function () {
         }
         if (rotationDirection != RotationDirection.Rotate180) {
             var shape = this.type.srsShapes.shape[newRotation];
-            var srsChecks = this.type.getRotationFor(this.rotation, newRotation);
-            for (var i = 0; i < shape.length; i++) {
+            console.log(fixForSrs(this.rotation), fixForSrs(newRotation));
+            var srsChecks = this.type.getRotationFor(fixForSrs(this.rotation), fixForSrs(newRotation));
+            console.log(this.x, this.y, this.rotation, newRotation, srsChecks);
+            var _loop_1 = function (i) {
                 var srsCheck = srsChecks[i];
-                if (currentGame.canShiftPiece(srsCheck.x, srsCheck.y, shape)) {
-                    this.x += srsCheck.x;
-                    this.y += srsCheck.y;
-                    this.rotation = newRotation;
-                    return;
+                if (currentGame.canShiftPiece(srsCheck.x, -srsCheck.y, shape)) {
+                    this_1.x += srsCheck.x;
+                    this_1.y -= srsCheck.y;
+                    this_1.rotation = newRotation;
+                    return { value: void 0 };
                 }
+                else {
+                    var list_1 = [];
+                    shape.forEach(function (mino) {
+                        list_1.push("{x: ".concat(_this.x + mino.x + srsCheck.x, ", y: ").concat(_this.y + mino.y + srsCheck.y, "}"));
+                    });
+                    console.log("{".concat(fixForSrs(this_1.rotation), " >> ").concat(fixForSrs(newRotation), "}[").concat(srsCheck.x, ", ").concat(srsCheck.y, "][").concat(list_1.join(", "), "],"));
+                }
+            };
+            var this_1 = this;
+            for (var i = 0; i < srsChecks.length; i++) {
+                var state_1 = _loop_1(i);
+                if (typeof state_1 === "object")
+                    return state_1.value;
             }
+            currentGame.displayBoard();
         }
         else {
             var shape = this.type.srsShapes.shape[newRotation];
@@ -333,9 +373,9 @@ var Piece = /** @class */ (function () {
         });
         this.previousMinos = [];
         var shadowY = this.y;
-        var _loop_1 = function () {
+        var _loop_2 = function () {
             var collides = false;
-            this_1.type.srsShapes.shape[this_1.rotation].forEach(function (mino) {
+            this_2.type.srsShapes.shape[this_2.rotation].forEach(function (mino) {
                 var row = board[shadowY + mino.y];
                 if (row === undefined) {
                     collides = true;
@@ -350,10 +390,10 @@ var Piece = /** @class */ (function () {
                 return "break";
             }
         };
-        var this_1 = this;
+        var this_2 = this;
         while (shadowY++ < 22) {
-            var state_1 = _loop_1();
-            if (state_1 === "break")
+            var state_2 = _loop_2();
+            if (state_2 === "break")
                 break;
         }
         shadowY--;
@@ -379,55 +419,153 @@ var Piece = /** @class */ (function () {
 var Queue = /** @class */ (function () {
     function Queue() {
         this.queue = [];
-        this.bagInfo = [];
+        this.startingBags = [];
+        this.cyclingBags = [];
     }
     Queue.prototype.nextBag = function () {
         var _a;
-        var _this = this;
-        var bag = PIECE_TYPES.slice();
-        for (var i = bag.length - 1; i > 0; i--) {
+        var bag = GenericBag;
+        if (this.startingBags.length > 0) {
+            bag = this.startingBags[0];
+        }
+        else if (this.cyclingBags.length > 0) {
+            bag = this.cyclingBags[0];
+        }
+        console.log(bag.bagChecks);
+        var pieces = bag.allowedPieces.slice();
+        for (var i = pieces.length - 1; i > 0 || (false && bag && !bag.checkPieces(pieces)); i = (i - 1 + pieces.length) % pieces.length) {
+            console.log(checkStringToFunction("S after O")([O, S]));
             var j = Math.floor(Math.random() * (i + 1));
-            _a = [bag[j], bag[i]], bag[i] = _a[0], bag[j] = _a[1];
+            _a = [pieces[j], pieces[i]], pieces[i] = _a[0], pieces[j] = _a[1];
         }
-        bag.filter(function (piece) { return !_this.bagInfo.length || _this.bagInfo[0].allowsPiece(piece); });
-        if (this.bagInfo.length) {
-            bag.slice(0, this.bagInfo[0].maxSize);
+        if (this.cyclingBags.length) {
+            pieces.slice(0, this.cyclingBags[0].maxSize);
         }
-        this.queue = this.queue.concat(bag);
-        return bag;
+        this.queue = this.queue.concat(pieces);
+        return pieces;
     };
     Queue.prototype.next = function () {
         if (this.queue.length < 6) {
-            this.bagInfo.splice(1);
+            if (this.startingBags.length > 0) {
+                this.startingBags.splice(0);
+            }
+            else if (this.cyclingBags.length > 0) {
+                this.cyclingBags.push(this.cyclingBags.shift());
+            }
             this.nextBag();
         }
         return this.queue.shift();
     };
     Queue.prototype.queuePieces = function () {
         if (this.queue.length < 6) {
+            if (this.startingBags.length > 0) {
+                this.startingBags.splice(0);
+            }
+            else if (this.cyclingBags.length > 0) {
+                this.cyclingBags.push(this.cyclingBags.shift());
+            }
             this.nextBag();
         }
         return this.queue.slice(0, 5);
     };
+    Queue.prototype.setStartingBags = function (bags) {
+        this.startingBags = bags.slice();
+    };
+    Queue.prototype.setCyclingBags = function (bags) {
+        this.cyclingBags = bags.slice();
+    };
     return Queue;
 }());
 var Bag = /** @class */ (function () {
-    function Bag(pieces, size) {
+    function Bag(name, pieces, size, bagChecks) {
         if (size === void 0) { size = 6; }
+        if (bagChecks === void 0) { bagChecks = undefined; }
+        this.name = undefined;
         this.allowedPieces = [];
-        this.bagChecks = [];
-        this.allowedPieces = pieces;
+        this.name = name;
+        this.allowedPieces = pieces.slice();
+        this.bagChecks = bagChecks;
     }
     Bag.prototype.allowsPiece = function (piece) {
-        return this.allowedPieces.some(function (allowedPiece) { return allowedPiece === piece; });
+        return this.allowedPieces.includes(piece);
     };
-    Bag.prototype.validateBagCheck = function (bag) {
+    Bag.prototype.checkPieces = function (bag) {
+        return !this.bagChecks || this.bagChecks.every(function (check) { return check(bag); });
     };
     return Bag;
 }());
-var GenericBag = new Bag(PIECE_TYPES);
+var GenericBag = new Bag("generic", PIECE_TYPES.slice());
+function checkStringToFunction(data) {
+    if (data.includes("after")) {
+        var pieces = data.split(" after ");
+        if (pieces.length != 2)
+            return undefined;
+        var allFrontPieces = pieces[0].split(", ").map(function (p) { return [p, stringToPieceType(p)]; });
+        allFrontPieces.filter(function (p) { return !p; }).forEach(function (p) { return console.log("Did not recognize piece " + p[0]); });
+        var frontPieces_1 = allFrontPieces.map(function (p) { return p[1]; }).filter(function (p) { return p; });
+        var allEndPieces = pieces[1].split(", ").map(function (p) { return [p, stringToPieceType(p)]; });
+        allEndPieces.filter(function (p) { return !p; }).forEach(function (p) { return console.log("Did not recognize piece " + p[0]); });
+        var endPieces_1 = allEndPieces.map(function (p) { return p[1]; }).filter(function (p) { return p; });
+        return (function (bag) { return frontPieces_1.sort(function (p) { return bag.indexOf(p); }).map(function (p) { return bag.indexOf(p); }).slice(-1)[0] > endPieces_1.sort(function (p) { return bag.indexOf(p); }).map(function (p) { return bag.indexOf(p); }).slice(-1)[0]; });
+    }
+    else if (data.includes("away from")) {
+        /*
+        let pieces = data.split(" away from ")
+        if (pieces.length != 2) return undefined
+        let frontPieces = pieces[0].split(", ")
+        let endPieces = pieces[1].split(", ")
+        */
+    }
+    else {
+        return undefined;
+    }
+}
+function individualCheck(data) {
+}
 function readBagFile(data) {
-    return undefined;
+    var parsedData = JSON.parse(data);
+    var bags = new Map();
+    bags.set("generic", GenericBag);
+    for (var key in parsedData) {
+        if (key === "generic") {
+            continue;
+        }
+        if (key === "start" || key === "cycle") {
+            continue;
+        }
+        var pieceData = parsedData[key]["pieces"];
+        var pieces = GenericBag.allowedPieces.slice();
+        if (pieceData) {
+            pieces = pieceData.split(", ").map(function (p) { return stringToPieceType(p); }).filter(function (p) { return p; });
+        }
+        var checkData = parsedData[key]["checks"];
+        var checks = [];
+        if (checkData) {
+            checks = checkData.map(function (c) { return checkStringToFunction(c); });
+        }
+        console.log(checks);
+        bags.set(key, new Bag(key, pieces, pieces.length, checks));
+    }
+    var startingBagsData = parsedData.start.split(", ");
+    var cyclingBagsData = parsedData.cycle.split(", ");
+    var startingBags = startingBagsData.filter(function (b) {
+        if (bags.has(b)) {
+            return true;
+        }
+        else {
+            return console.log("No bag found for " + b + " in starting bags");
+        }
+    }).map(function (b) { return bags.get(b); });
+    var cyclingBags = cyclingBagsData.filter(function (b) {
+        if (bags.has(b)) {
+            return true;
+        }
+        else {
+            return console.log("No bag found for " + b + " in cycling bags");
+        }
+    }).map(function (b) { return bags.get(b); });
+    currentGame.queue.setStartingBags(startingBags);
+    currentGame.queue.setCyclingBags(cyclingBags);
 }
 var Controls = /** @class */ (function () {
     function Controls(left, right, down, rotateClockwise, rotateCounterClockwise, rotate180, hold, hardDrop) {
@@ -440,13 +578,11 @@ var Controls = /** @class */ (function () {
         this.hold = hold;
         this.hardDrop = hardDrop;
     }
-    Controls.prototype.copy = function () {
-        return new Controls(this.left, this.right, this.down, this.rotateClockwise, this.rotateCounterClockwise, this.rotate180, this.hold, this.hardDrop);
-    };
     return Controls;
 }());
 var defaultControls = new Controls("ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", "z", "x", "c", " ");
 var alternativeControls = new Controls("j", "l", "k", "r", "w", "e", "i", " ");
+var karpControls = new Controls("ArrowLeft", "ArrowRight", "ArrowDown", "x", "z", "Shift", "c", " ");
 var Game = /** @class */ (function () {
     function Game(location, labelElement, topLabelElement) {
         var _this = this;
@@ -455,11 +591,11 @@ var Game = /** @class */ (function () {
         this.nextPieces = [];
         this.frameCounter = 0;
         this.display = [];
-        this.gravity = 20;
+        this.gravity = 10;
         this.gravityCounter = 0;
-        this.marginTime = 20;
+        this.marginTime = 2000;
         this.marginCounter = 0;
-        this.heldCurrentPieceAlready = false;
+        this.heldCurrentPieceAlready = true;
         this.controls = currentControls;
         this.holdPieceDisplay = [];
         this.queueDisplay = [];
@@ -518,7 +654,7 @@ var Game = /** @class */ (function () {
         this.displayLabel();
     };
     Game.prototype.displayLabel = function () {
-        this.labelElement.innerText = "Lines: ".concat(this.linesCleared, " Pieces: ").concat(this.pieceCount, " \n        Score: ").concat(this.score, " Time: ").concat(this.secondsPlaying.toFixed(2));
+        this.labelElement.innerText = "Lines: ".concat(this.linesCleared, " Pieces: ").concat(this.pieceCount, " \n        Score: ").concat(this.score, " Time: ").concat(this.secondsPlaying.toFixed(2), "\n        \n        Current piece rotation: ").concat(this.currentPiece.rotation, "\n        ");
     };
     Game.prototype.displayTopLabel = function (text) {
         var _this = this;
@@ -618,7 +754,6 @@ var Game = /** @class */ (function () {
         for (var i = 0; i < 10; i++) {
             array[i] = Mino.None;
         }
-        this.linesCleared++;
         this.board.unshift(array);
         this.displayBoard();
         return true;
@@ -696,14 +831,14 @@ var Game = /** @class */ (function () {
     };
     Game.prototype.updateQueueDisplay = function () {
         for (var i = 0; i < 5; i++) {
-            var convertToCompactSize1 = this.convertToCompactSize(this.nextPieces[i]);
+            var compactSizeBoard = this.convertToCompactSize(this.nextPieces[i]);
             for (var j = 0; j < 3; j++) {
                 for (var k = 0; k < 4; k++) {
-                    if (convertToCompactSize1[j][k] === Mino.None) {
+                    if (compactSizeBoard[j][k] === Mino.None) {
                         this.queueDisplay[i * 3 + j][k].style.backgroundColor = "#313131";
                     }
                     else {
-                        this.queueDisplay[i * 3 + j][k].style.backgroundColor = PIECE_TYPES[convertToCompactSize1[j][k]].color;
+                        this.queueDisplay[i * 3 + j][k].style.backgroundColor = PIECE_TYPES[compactSizeBoard[j][k]].color;
                     }
                 }
             }
@@ -739,10 +874,7 @@ var Game = /** @class */ (function () {
         var _this = this;
         document.addEventListener('keydown', function (event) {
             if (_this.gameOver) {
-                if (event.key == "Enter") {
-                    // reset game
-                    _this.reset();
-                }
+                _this.reset();
                 return;
             }
             else if (_this.gamePaused) {
@@ -750,6 +882,7 @@ var Game = /** @class */ (function () {
                 _this.displayTopLabel("Resumed");
                 return;
             }
+            event.preventDefault();
             var preventDefault = true;
             switch (event.key) {
                 case _this.controls.left:
@@ -806,6 +939,7 @@ var Game = /** @class */ (function () {
         var pieceType = this.holdPiece;
         if (pieceType == undefined) {
             pieceType = this.queue.next();
+            this.nextPieces = this.queue.queuePieces();
         }
         this.updateQueueDisplay();
         console.log("Holding " + pieceType.name);
@@ -829,10 +963,6 @@ var Game = /** @class */ (function () {
                 mino.classList.add("black-mino");
                 row.appendChild(mino);
             }
-            var mino1 = document.createElement("div");
-            mino1.classList.add("mino");
-            mino1.classList.add("black-mino");
-            row.appendChild(mino1);
             for (var j = 0; j < 10; j++) {
                 var mino = document.createElement("div");
                 mino.classList.add("mino");
@@ -865,10 +995,6 @@ var Game = /** @class */ (function () {
                     row.appendChild(mino);
                 }
             }
-            var mino1 = document.createElement("div");
-            mino1.classList.add("mino");
-            mino1.classList.add("black-mino");
-            row.appendChild(mino1);
             for (var j = 0; j < 10; j++) {
                 var mino = document.createElement("div");
                 mino.classList.add("mino");
@@ -923,7 +1049,7 @@ var Game = /** @class */ (function () {
             _this.board[minoLocation.y][minoLocation.x] = Mino.Shadow;
         });
         this.displayBoard();
-        this.topLabelElement.innerHTML = "Game Over";
+        this.topLabelElement.innerHTML = "Game Over : Press any key to retry";
     };
     Game.prototype.movePieceLeft = function () {
         if (this.canShiftPiece(-1, 0)) {
@@ -1007,7 +1133,7 @@ function debugPieceTypes() {
         });
     });
 }
-var currentGame;
+var currentGame = new Game(document.getElementById("tetris"));
 var gameDiv = document.getElementById("tetris");
 gameDiv.style.display = "none";
 var startButton = document.getElementById("start-button");
